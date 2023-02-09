@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  mongo-node-1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: mongo
+    command: [ "--keyFile", "/file.key", "--replSet", "rs0", "--bind_ip_all" ]
+    volumes:
+      - ".docker/replica-set.sh:/replica-set.sh"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "secretpass"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", 'db.runCommand("ping").ok', "--quiet" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mongo-network
+
+  mongo-node-2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: mongo
+    command: [ "--keyFile", "/file.key", "--replSet", "rs0", "--bind_ip_all" ]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "secretpass"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", 'db.runCommand("ping").ok', "--quiet" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mongo-network
+
+  mongo-node-3:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: mongo
+    command: [ "--keyFile", "/file.key", "--replSet", "rs0", "--bind_ip_all" ]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "secretpass"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", 'db.runCommand("ping").ok', "--quiet" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mongo-network
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: php
+      args:
+        PHP_VERSION: "8.1"
+        ALPINE_VERSION: "3.16"
+        MONGODB_EXT_VERSION: "1.15.0"
+    tty: true
+    depends_on:
+      mongo-node-1:
+        condition: service_healthy
+      mongo-node-2:
+        condition: service_healthy
+      mongo-node-3:
+        condition: service_healthy
+    volumes:
+      - ".:/app"
+    networks:
+      - mongo-network
+
+networks:
+  mongo-network:
+    name: mongo-network
+    driver: bridge
